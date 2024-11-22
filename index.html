@@ -42,225 +42,88 @@
 
     <div class="results" id="results"></div>
 
-    <script>
-        function generateForm() {
-            const inputText = document.getElementById("inputText").value;
-            const questionsContainer = document.getElementById("questions-container");
-            const form = document.getElementById("quiz-form");
+  <script>
+    function generateForm() {
+        const inputText = document.getElementById("inputText").value;
+        const questionsContainer = document.getElementById("questions-container");
+        const form = document.getElementById("quiz-form");
     
-            // Expresiones regulares para identificar preguntas y respuestas (con diferentes formatos)
-            const questionRegex1 = /(?:Enunciado de la pregunta\n|^)([\s\S]*?)\n\nPregunta \d+Respuesta\n([\s\S]*?)Retroalimentación\nRespuesta correcta\nLa respuesta correcta es:\s(.*?)(?=\n|$)/g;
-            const questionRegex2 = /Enunciado de la pregunta\n([\s\S]*?)\nPregunta \d+Respuesta\n([\s\S]*?)Retroalimentación\nLa respuesta correcta es:\s(.*?)(?=\n|$)/g;
-            const questionRegex3 = /Enunciado de la pregunta: ([\s\S]*?)\nOpciones de respuesta:([\s\S]*?)\nRetroalimentación:.*?Respuesta correcta es: ([^\n]+)/g; // Variante con formato específico
-            const questionRegex4 = /Pregunta \d+: ([\s\S]*?)\nOpciones:\n([\s\S]*?)\nRespuesta correcta:\s*(.*?)(?=\n|$)/g; // Variante con un formato más sencillo
-            const questionRegex5 = /(?:Pregunta \d+:\s?)([\s\S]*?)\nOpciones disponibles:[\s\S]*?Respuesta correcta:\s([^\n]+)/g; // Variante con el texto "Opciones disponibles"
+        // Expresión regular mejorada para capturar preguntas
+        const questionRegex = /Enunciado de la pregunta\n([\s\S]*?)\n\nPregunta \d+Respuesta\n([\s\S]*?)Retroalimentación[\s\S]*?La respuesta correcta es:\s*(.*?)(?=\n|$)/g;
     
-            questionsContainer.innerHTML = "";
-            let questionCount = 0;
-            let match;
+        questionsContainer.innerHTML = "";
+        let questionCount = 0;
+        let match;
     
-            // Intentar con la primera expresión regular
-            while ((match = questionRegex1.exec(inputText)) !== null) {
-                const questionText = match[1].trim();
-                const optionsText = match[2].trim();
-                const correctAnswerText = match[3].trim();
+        while ((match = questionRegex.exec(inputText)) !== null) {
+            const questionText = match[1].trim(); // Enunciado de la pregunta
+            const optionsText = match[2]?.trim() || ""; // Opciones de respuesta
+            const correctAnswerText = match[3]?.trim() || ""; // Respuesta correcta
     
-                questionCount++;
+            questionCount++;
     
-                // Crear contenedor para cada pregunta
-                const questionDiv = document.createElement("div");
-                questionDiv.className = "question";
-                questionDiv.innerHTML = `<p><strong>${questionCount}. ${questionText}</strong></p>`;
+            // Crear contenedor para la pregunta
+            const questionDiv = document.createElement("div");
+            questionDiv.className = "question";
+            questionDiv.innerHTML = `<p><strong>${questionCount}. ${questionText}</strong></p>`;
     
-                // Procesar opciones
-                const optionRegex = /([a-z])\.\n(.*?)(?=\n[a-z]\.|$)/gs;
-                let optionMatch;
-                while ((optionMatch = optionRegex.exec(optionsText)) !== null) {
-                    const optionLetter = optionMatch[1];
-                    const optionText = optionMatch[2].trim();
-                    const isCorrect = optionText === correctAnswerText;
+            // Expresión regular para capturar opciones
+            const optionRegex = /^([a-c])\.\s*(.+)$/gm; // Captura 'a.', 'b.', 'c.' con texto
+            let optionMatch;
     
-                    const optionHTML = `
-                        <label>
-                            <input type="radio" name="q${questionCount}" value="${optionLetter}" data-correct="${isCorrect}">
-                            ${optionLetter}. ${optionText}
-                        </label><br>
-                    `;
-                    questionDiv.innerHTML += optionHTML;
-                }
+            while ((optionMatch = optionRegex.exec(optionsText)) !== null) {
+                const optionLetter = optionMatch[1]; // Letra de la opción
+                const optionText = optionMatch[2].trim(); // Texto de la opción
+                const isCorrect = correctAnswerText === optionText; // Comparar con respuesta correcta
     
-                questionsContainer.appendChild(questionDiv);
+                const optionHTML = `
+                    <label>
+                        <input type="radio" name="q${questionCount}" value="${optionLetter}" data-correct="${isCorrect}">
+                        ${optionLetter}. ${optionText}
+                    </label><br>
+                `;
+                questionDiv.innerHTML += optionHTML;
             }
     
-            // Si no encontró preguntas con la primera expresión regular, probar con las otras
-            if (questionCount === 0) {
-                while ((match = questionRegex2.exec(inputText)) !== null) {
-                    const questionText = match[1].trim();
-                    const optionsText = match[2].trim();
-                    const correctAnswerText = match[3].trim();
-    
-                    questionCount++;
-    
-                    // Crear contenedor para cada pregunta
-                    const questionDiv = document.createElement("div");
-                    questionDiv.className = "question";
-                    questionDiv.innerHTML = `<p><strong>${questionCount}. ${questionText}</strong></p>`;
-    
-                    // Procesar opciones
-                    const optionRegex = /([a-z])\.\n(.*?)(?=\n[a-z]\.|$)/gs;
-                    let optionMatch;
-                    while ((optionMatch = optionRegex.exec(optionsText)) !== null) {
-                        const optionLetter = optionMatch[1];
-                        const optionText = optionMatch[2].trim();
-                        const isCorrect = optionText === correctAnswerText;
-    
-                        const optionHTML = `
-                            <label>
-                                <input type="radio" name="q${questionCount}" value="${optionLetter}" data-correct="${isCorrect}">
-                                ${optionLetter}. ${optionText}
-                            </label><br>
-                        `;
-                        questionDiv.innerHTML += optionHTML;
-                    }
-    
-                    questionsContainer.appendChild(questionDiv);
-                }
-            }
-    
-            if (questionCount === 0) {
-                while ((match = questionRegex3.exec(inputText)) !== null) {
-                    const questionText = match[1].trim();
-                    const optionsText = match[2].trim();
-                    const correctAnswerText = match[3].trim();
-    
-                    questionCount++;
-    
-                    // Crear contenedor para cada pregunta
-                    const questionDiv = document.createElement("div");
-                    questionDiv.className = "question";
-                    questionDiv.innerHTML = `<p><strong>${questionCount}. ${questionText}</strong></p>`;
-    
-                    // Procesar opciones
-                    const optionRegex = /([a-z])\.\n(.*?)(?=\n[a-z]\.|$)/gs;
-                    let optionMatch;
-                    while ((optionMatch = optionRegex.exec(optionsText)) !== null) {
-                        const optionLetter = optionMatch[1];
-                        const optionText = optionMatch[2].trim();
-                        const isCorrect = optionText === correctAnswerText;
-    
-                        const optionHTML = `
-                            <label>
-                                <input type="radio" name="q${questionCount}" value="${optionLetter}" data-correct="${isCorrect}">
-                                ${optionLetter}. ${optionText}
-                            </label><br>
-                        `;
-                        questionDiv.innerHTML += optionHTML;
-                    }
-    
-                    questionsContainer.appendChild(questionDiv);
-                }
-            }
-    
-            if (questionCount === 0) {
-                while ((match = questionRegex4.exec(inputText)) !== null) {
-                    const questionText = match[1].trim();
-                    const optionsText = match[2].trim();
-                    const correctAnswerText = match[3].trim();
-    
-                    questionCount++;
-    
-                    // Crear contenedor para cada pregunta
-                    const questionDiv = document.createElement("div");
-                    questionDiv.className = "question";
-                    questionDiv.innerHTML = `<p><strong>${questionCount}. ${questionText}</strong></p>`;
-    
-                    // Procesar opciones
-                    const optionRegex = /([a-z])\.\n(.*?)(?=\n[a-z]\.|$)/gs;
-                    let optionMatch;
-                    while ((optionMatch = optionRegex.exec(optionsText)) !== null) {
-                        const optionLetter = optionMatch[1];
-                        const optionText = optionMatch[2].trim();
-                        const isCorrect = optionText === correctAnswerText;
-    
-                        const optionHTML = `
-                            <label>
-                                <input type="radio" name="q${questionCount}" value="${optionLetter}" data-correct="${isCorrect}">
-                                ${optionLetter}. ${optionText}
-                            </label><br>
-                        `;
-                        questionDiv.innerHTML += optionHTML;
-                    }
-    
-                    questionsContainer.appendChild(questionDiv);
-                }
-            }
-    
-            if (questionCount === 0) {
-                while ((match = questionRegex5.exec(inputText)) !== null) {
-                    const questionText = match[1].trim();
-                    const optionsText = match[2].trim();
-                    const correctAnswerText = match[3].trim();
-    
-                    questionCount++;
-    
-                    // Crear contenedor para cada pregunta
-                    const questionDiv = document.createElement("div");
-                    questionDiv.className = "question";
-                    questionDiv.innerHTML = `<p><strong>${questionCount}. ${questionText}</strong></p>`;
-    
-                    // Procesar opciones
-                    const optionRegex = /([a-z])\.\n(.*?)(?=\n[a-z]\.|$)/gs;
-                    let optionMatch;
-                    while ((optionMatch = optionRegex.exec(optionsText)) !== null) {
-                        const optionLetter = optionMatch[1];
-                        const optionText = optionMatch[2].trim();
-                        const isCorrect = optionText === correctAnswerText;
-    
-                        const optionHTML = `
-                            <label>
-                                <input type="radio" name="q${questionCount}" value="${optionLetter}" data-correct="${isCorrect}">
-                                ${optionLetter}. ${optionText}
-                            </label><br>
-                        `;
-                        questionDiv.innerHTML += optionHTML;
-                    }
-    
-                    questionsContainer.appendChild(questionDiv);
-                }
-            }
-    
-            form.style.display = questionCount > 0 ? "block" : "none";
-    
-            if (questionCount === 0) {
-                alert("No se detectaron preguntas válidas en el texto. Por favor, revisa el formato.");
-            }
+            questionsContainer.appendChild(questionDiv);
         }
     
-        function checkAnswers() {
-            const questions = document.querySelectorAll(".question");
-            let score = 0;
-            let totalQuestions = questions.length;
-            let resultText = "";
+        form.style.display = questionCount > 0 ? "block" : "none";
     
-            questions.forEach((question, index) => {
-                const questionNumber = index + 1;
-                const selectedOption = question.querySelector(`input[name="q${questionNumber}"]:checked`);
-                if (selectedOption) {
-                    if (selectedOption.dataset.correct === "true") {
-                        score++;
-                        resultText += `<p class="correct">Pregunta ${questionNumber}: Correcta</p>`;
-                    } else {
-                        resultText += `<p class="incorrect">Pregunta ${questionNumber}: Incorrecta</p>`;
-                    }
+        if (questionCount === 0) {
+            alert("No se detectaron preguntas válidas en el texto. Por favor, revisa el formato.");
+        }
+    }
+    
+    
+    
+
+    function checkAnswers() {
+        const questions = document.querySelectorAll(".question");
+        let score = 0;
+        let totalQuestions = questions.length;
+        let resultText = "";
+
+        questions.forEach((question, index) => {
+            const questionNumber = index + 1;
+            const selectedOption = question.querySelector(`input[name="q${questionNumber}"]:checked`);
+            if (selectedOption) {
+                if (selectedOption.dataset.correct === "true") {
+                    score++;
+                    resultText += `<p class="correct">Pregunta ${questionNumber}: Correcta</p>`;
                 } else {
-                    resultText += `<p class="incorrect">Pregunta ${questionNumber}: No respondida</p>`;
+                    resultText += `<p class="incorrect">Pregunta ${questionNumber}: Incorrecta</p>`;
                 }
-            });
-    
-            resultText += `<p>Tu puntuación: ${score} de ${totalQuestions}</p>`;
-            document.getElementById("results").innerHTML = resultText;
-        }
-    </script>
+            } else {
+                resultText += `<p class="incorrect">Pregunta ${questionNumber}: No respondida</p>`;
+            }
+        });
+
+        resultText += `<p>Tu puntuación: ${score} de ${totalQuestions}</p>`;
+        document.getElementById("results").innerHTML = resultText;
+    }
+</script>
+
     
 </body>
 </html>
