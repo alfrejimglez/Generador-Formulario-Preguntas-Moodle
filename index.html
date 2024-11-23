@@ -29,6 +29,10 @@
         .incorrect {
             color: red;
         }
+        .correct-answer {
+            color: blue;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -62,41 +66,41 @@
             const exportButtons = document.getElementById("export-buttons");
             const formTitle = document.getElementById("form-title");
             const formDescription = document.getElementById("form-description");
-
+        
             // Ocultar los elementos de texto y el botón de generación
             formTitle.style.display = "none";
             formDescription.style.display = "none";
             generateButton.style.display = "none"; // Ocultar el botón de "Generar Formulario"
             document.getElementById("inputText").style.display = "none"; // Ocultar el área de texto
-
+        
             // Expresión regular mejorada para capturar preguntas
-            const questionRegex = /Enunciado de la pregunta\n([\s\S]*?)\n\nPregunta \d+Respuesta\n([\s\S]*?)Retroalimentación[\s\S]*?La respuesta correcta es:\s*(.*?)(?=\n|$)/g;
-
+            const questionRegex = /Enunciado de la pregunta\n([\s\S]*?)\n?\n?Pregunta \d+Respuesta\n?([\s\S]*?)\n?Retroalimentación[\s\S]*?La respuesta correcta es:\s*(.*?)(?=\n|$)/g;
+        
             questionsContainer.innerHTML = "";
             let questionCount = 0;
             let match;
-
+        
             while ((match = questionRegex.exec(inputText)) !== null) {
                 const questionText = match[1].trim(); // Enunciado de la pregunta
                 const optionsText = match[2]?.trim() || ""; // Opciones de respuesta
                 const correctAnswerText = match[3]?.trim() || ""; // Respuesta correcta
-
+        
                 questionCount++;
-
+        
                 // Crear contenedor para la pregunta
                 const questionDiv = document.createElement("div");
                 questionDiv.className = "question";
                 questionDiv.innerHTML = `<p><strong>${questionCount}. ${questionText}</strong></p>`;
-
+        
                 // Expresión regular para capturar opciones
                 const optionRegex = /^([a-c])\.\s*(.+)$/gm; // Captura 'a.', 'b.', 'c.' con texto
                 let optionMatch;
-
+        
                 while ((optionMatch = optionRegex.exec(optionsText)) !== null) {
                     const optionLetter = optionMatch[1]; // Letra de la opción
                     const optionText = optionMatch[2].trim(); // Texto de la opción
                     const isCorrect = correctAnswerText === optionText; // Comparar con respuesta correcta
-
+        
                     const optionHTML = `
                         <label>
                             <input type="radio" name="q${questionCount}" value="${optionLetter}" data-correct="${isCorrect}">
@@ -105,18 +109,19 @@
                     `;
                     questionDiv.innerHTML += optionHTML;
                 }
-
+        
                 questionsContainer.appendChild(questionDiv);
             }
-
+        
             form.style.display = questionCount > 0 ? "block" : "none";
-
+        
             if (questionCount === 0) {
                 alert("No se detectaron preguntas válidas en el texto. Por favor, revisa el formato.");
             }
-
+        
             exportButtons.style.display = "block"; // Mostrar los botones de exportación
         }
+        
 
         function checkAnswers() {
             const questions = document.querySelectorAll(".question");
@@ -134,12 +139,20 @@
                         score++;
                         resultText += `<p class="correct">Pregunta ${questionNumber}: Correcta</p>`;
                     } else if (correctOption) {
-                        resultText += `<p class="incorrect">Pregunta ${questionNumber}: Incorrecta. La respuesta correcta era: ${correctOption.nextSibling.textContent.trim()}</p>`;
+                        resultText += `
+                            <p class="incorrect">
+                                Pregunta ${questionNumber}: Incorrecta. 
+                                La respuesta correcta era: <span class="correct-answer">${correctOption.nextSibling.textContent.trim()}</span>
+                            </p>`;
                     } else {
                         resultText += `<p class="incorrect">Pregunta ${questionNumber}: Incorrecta. Respuesta correcta no disponible.</p>`;
                     }
                 } else if (correctOption) {
-                    resultText += `<p class="incorrect">Pregunta ${questionNumber}: No respondida. La respuesta correcta era: ${correctOption.nextSibling.textContent.trim()}</p>`;
+                    resultText += `
+                        <p class="incorrect">
+                            Pregunta ${questionNumber}: No respondida. 
+                            La respuesta correcta era: <span class="correct-answer">${correctOption.nextSibling.textContent.trim()}</span>
+                        </p>`;
                 } else {
                     resultText += `<p class="incorrect">Pregunta ${questionNumber}: No respondida. Respuesta correcta no disponible.</p>`;
                 }
@@ -148,6 +161,8 @@
             resultText += `<p>Tu puntuación: ${score} de ${totalQuestions}</p>`;
             document.getElementById("results").innerHTML = resultText;
         }
+        
+        
         
 
         // Función para exportar el formulario a PDF
